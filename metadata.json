@@ -1,0 +1,6 @@
+{
+  "name": "LeoVerse",
+  "description": "Multi-agent SaaS platform featuring a neon 'Leo Magic' design system, simulated billing, and role-based agent dashboards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
