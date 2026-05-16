@@ -3,7 +3,8 @@ import {
   Sparkles, Code, Play, ExternalLink, Settings, 
   ChevronDown, MessageSquare, MonitorPlay, 
   Send, History, FileCode2, Paperclip, Mic, MonitorSmartphone,
-  Menu, Share, Download, Maximize2, MoreVertical, X, Key, Check
+  Menu, Share, Download, Maximize2, MoreVertical, X, Key, Check,
+  GitFork, GitCommit, Github, FilePlus, Code2, Copy, FileText
 } from 'lucide-react';
 import { cn } from './lib/utils';
 
@@ -20,20 +21,34 @@ export default function App() {
   const [generationCount, setGenerationCount] = useState(1);
   const [apiKey, setApiKey] = useState("");
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Modals
   const [showSettings, setShowSettings] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showSecrets, setShowSecrets] = useState(false);
   
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      text: 'Hello! I am your AI Builder. Set your Gemini API key in Settings, describe what you want, and I will generate standard HTML/JS/CSS code and render it live.'
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  const suggestions = [
+    "Build a personal portfolio with dark mode",
+    "Create a real-time chat UI",
+    "Make an interactive Kanban board",
+    "Build a neon themed crypto dashboard"
+  ];
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setPrompt(suggestion);
+  };
+
+  const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setAttachedFiles(prev => [...prev, ...Array.from(e.target.files!)]);
     }
-  ]);
+  };
 
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
@@ -119,19 +134,35 @@ export default function App() {
         </div>
         
         <div className="flex items-center gap-1 sm:gap-2">
-          <button onClick={() => setShowShare(true)} className="hidden sm:flex items-center gap-2 p-2 px-3 hover:bg-panel-hover rounded-md text-muted hover:text-foreground transition-colors text-sm font-medium">
+          <button className="hidden sm:flex items-center gap-2 p-1.5 px-2 hover:bg-panel-hover rounded-md text-muted hover:text-foreground transition-colors text-sm font-medium">
+            <GitFork className="w-4 h-4" />
+            Remix
+          </button>
+          <button className="hidden sm:flex items-center gap-2 p-1.5 px-2 hover:bg-panel-hover rounded-md text-muted hover:text-foreground transition-colors text-sm font-medium border border-border">
+            <GitCommit className="w-4 h-4" />
+            Version
+          </button>
+          
+          <div className="hidden sm:block h-3 w-[1px] bg-border mx-1" />
+
+          <button onClick={() => setShowSecrets(true)} className="hidden sm:flex items-center gap-2 p-1.5 px-2 hover:bg-panel-hover rounded-md text-muted hover:text-foreground transition-colors text-sm font-medium">
+            <Key className="w-4 h-4" />
+            Secrets
+          </button>
+          
+          <button onClick={() => setShowShare(true)} className="hidden sm:flex items-center gap-2 p-1.5 px-2 hover:bg-panel-hover rounded-md text-muted hover:text-foreground transition-colors text-sm font-medium">
             <Share className="w-4 h-4" />
             Share
           </button>
           
-          <button onClick={() => setShowExport(true)} className="hidden sm:flex items-center gap-2 p-2 px-3 hover:bg-panel-hover rounded-md text-muted hover:text-foreground transition-colors text-sm font-medium border border-border">
-            <Download className="w-4 h-4" />
+          <div className="hidden sm:block h-3 w-[1px] bg-border mx-1" />
+
+          <button onClick={() => setShowExport(true)} className="hidden sm:flex items-center gap-2 p-1.5 px-2 hover:bg-panel-hover rounded-md text-muted hover:text-foreground transition-colors text-sm font-medium">
+            <Github className="w-4 h-4" />
             Export
           </button>
           
-          <div className="hidden sm:block h-4 w-[1px] bg-border mx-1" />
-          
-          <button className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors shadow-[0_0_15px_rgba(249,115,22,0.2)] hover:shadow-[0_0_20px_rgba(249,115,22,0.4)]">
+          <button className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors shadow-[0_0_15px_rgba(249,115,22,0.2)] hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] ml-1">
              <Play className="w-4 h-4 fill-current" />
              Deploy
           </button>
@@ -153,8 +184,35 @@ export default function App() {
         <section className="w-full md:w-[400px] lg:w-[480px] shrink-0 flex flex-col border-r border-border bg-background z-10 relative">
           
           {/* Chat History */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {messages.map((msg) => (
+          <div className="flex-1 overflow-y-auto p-4 space-y-6 flex flex-col">
+            {messages.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center flex-col text-center mt-10">
+                <div className="w-16 h-16 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(249,115,22,0.1)]">
+                  <Sparkles className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-semibold mb-2">What are we building today?</h2>
+                <p className="text-muted text-sm max-w-[280px] leading-relaxed mb-10">
+                  Set your Gemini API key in Settings, describe the web application you want to build, and I will generate the code and live preview.
+                </p>
+                
+                <div className="w-full space-y-2 mt-auto pb-4 px-2">
+                  <p className="text-xs font-semibold text-muted uppercase tracking-wider text-left pl-2">Suggestions</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {suggestions.map((suggestion, i) => (
+                      <button 
+                        key={i} 
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className="text-left p-3 rounded-xl border border-border bg-panel hover:bg-panel-hover hover:border-primary/50 transition-colors text-sm text-gray-300"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {messages.map((msg) => (
               <div key={msg.id} className={cn(
                 "flex flex-col gap-2 max-w-[95%]",
                 msg.role === 'user' ? "ml-auto" : "mr-auto"
@@ -194,10 +252,25 @@ export default function App() {
               </div>
             )}
             <div ref={endOfMessagesRef} />
+            </>
+            )}
           </div>
 
           {/* Input Area */}
           <div className="p-4 bg-background border-t border-border shrink-0">
+            {attachedFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {attachedFiles.map((file, i) => (
+                  <div key={i} className="flex items-center gap-1.5 bg-panel border border-border px-2.5 py-1.5 rounded-lg text-xs">
+                    <FileText className="w-3.5 h-3.5 text-muted" />
+                    <span className="truncate max-w-[120px]">{file.name}</span>
+                    <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted hover:text-foreground">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="bg-panel border border-border rounded-2xl shadow-lg relative flex flex-col focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all group overflow-hidden group">
               <textarea 
                 value={prompt}
@@ -209,7 +282,8 @@ export default function App() {
               
               <div className="flex items-center justify-between p-3 bg-panel/80">
                 <div className="flex items-center gap-1 text-muted">
-                  <button className="p-2 hover:bg-background rounded-full hover:text-foreground transition-colors" title="Attach file">
+                  <input type="file" ref={fileInputRef} className="hidden" multiple onChange={handleFileAttach} />
+                  <button onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-background rounded-full hover:text-foreground transition-colors" title="Attach file">
                     <Paperclip className="w-4 h-4" />
                   </button>
                   <button className="p-2 hover:bg-background rounded-full hover:text-foreground transition-colors" title="Voice dictation">
@@ -334,19 +408,27 @@ export default function App() {
                 {/* File Explorer + Editor split */}
                 <div className="flex-1 flex overflow-hidden">
                   <div className="w-48 shrink-0 bg-[#161616] border-r border-[#333] hidden md:flex flex-col py-2">
-                    <div className="px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider">Explorer</div>
+                    <div className="px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center justify-between">
+                      Explorer
+                      <button className="hover:text-white"><FilePlus className="w-3.5 h-3.5" /></button>
+                    </div>
                     <div className="px-4 py-1.5 text-orange-400 bg-white/5 cursor-pointer flex items-center gap-2 border-l-2 border-orange-500">
                       <FileCode2 className="w-4 h-4" /> index.html
                     </div>
                   </div>
-                  <div className="flex-1 flex flex-col relative">
-                    <div className="h-10 bg-[#1e1e1e] border-b border-[#333] flex items-center px-2 shrink-0">
-                      <div className="px-4 py-2 bg-[#1e1e1e] text-orange-400 border-t-2 border-orange-500">
-                        index.html
+                  <div className="flex-1 flex flex-col relative w-full overflow-hidden">
+                    <div className="h-10 bg-[#1e1e1e] border-b border-[#333] flex items-center px-2 shrink-0 justify-between">
+                      <div className="flex h-full">
+                        <div className="px-4 py-2 bg-[#1e1e1e] text-orange-400 border-t-2 border-orange-500 text-sm flex items-center gap-2">
+                          <Code2 className="w-4 h-4" /> index.html
+                        </div>
                       </div>
+                      <button className="p-1 hover:bg-[#333] rounded text-gray-400 hover:text-white mr-2" title="Copy code">
+                        <Copy className="w-4 h-4" />
+                      </button>
                     </div>
-                    <div className="flex-1 p-4 overflow-y-auto text-gray-300 leading-relaxed custom-scrollbar">
-                      <pre className="m-0 break-all whitespace-pre-wrap">
+                    <div className="flex-1 p-4 overflow-y-auto text-gray-300 leading-relaxed custom-scrollbar bg-[#1e1e1e]">
+                      <pre className="m-0 break-all whitespace-pre-wrap font-mono text-sm max-w-full">
                         {previewHtml || "// No code generated yet. Type a prompt!"}
                       </pre>
                     </div>
@@ -391,6 +473,35 @@ export default function App() {
             <div className="mt-8 pt-4 border-t border-border flex justify-end">
               <button onClick={() => setShowSettings(false)} className="px-5 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary-hover shadow-sm">
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSecrets && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <div className="bg-panel border border-border shadow-2xl rounded-2xl w-full max-w-md p-6 relative">
+            <button onClick={() => setShowSecrets(false)} className="absolute top-4 right-4 text-muted hover:text-foreground">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-2 flex items-center gap-2"><Key className="w-5 h-5 text-primary"/> Environment Secrets</h2>
+            <p className="text-muted text-sm mb-6">Manage sensitive configuration like API keys.</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-muted">OPENAI_API_KEY</label>
+                <input type="password" placeholder="sk-..." className="w-full bg-background border border-border px-3 py-2 rounded-lg text-sm focus-ring" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-muted">STRIPE_SECRET_KEY</label>
+                <input type="password" placeholder="sk_test_..." className="w-full bg-background border border-border px-3 py-2 rounded-lg text-sm focus-ring" />
+              </div>
+            </div>
+
+            <div className="mt-8 pt-4 border-t border-border flex justify-end">
+              <button onClick={() => setShowSecrets(false)} className="px-5 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary-hover shadow-sm">
+                Save Secrets
               </button>
             </div>
           </div>
