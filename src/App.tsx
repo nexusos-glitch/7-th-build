@@ -3,10 +3,9 @@ import {
   Sparkles, Code, Play, ExternalLink, Settings, 
   ChevronDown, MessageSquare, MonitorPlay, 
   Send, History, FileCode2, Paperclip, Mic, MonitorSmartphone,
-  Menu, Share, Download, Maximize2, MoreVertical
+  Menu, Share, Download, Maximize2, MoreVertical, X, Key, Check
 } from 'lucide-react';
 import { cn } from './lib/utils';
-import PreviewApp from './components/PreviewApp';
 
 interface ChatMessage {
   id: string;
@@ -19,12 +18,20 @@ export default function App() {
   const [prompt, setPrompt] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [generationCount, setGenerationCount] = useState(1);
+  const [apiKey, setApiKey] = useState("");
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  
+  // Modals
+  const [showSettings, setShowSettings] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       role: 'assistant',
-      text: 'Hello! I am your AI Coding Assistant. Describe what you want to build, and I will write the code and render a live preview for you.'
+      text: 'Hello! I am your AI Builder. Set your Gemini API key in Settings, describe what you want, and I will generate standard HTML/JS/CSS code and render it live.'
     }
   ]);
 
@@ -34,25 +41,53 @@ export default function App() {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!prompt.trim() || isTyping) return;
     
     const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', text: prompt };
+    const history = messages.slice();
     setMessages(prev => [...prev, userMsg]);
     setPrompt("");
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: userMsg.text,
+          history,
+          apiKey
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setPreviewHtml(data.code);
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          text: `I have updated the app. The Preview tab has been refreshed with the new features.`
+        }]);
+        setGenerationCount(prev => prev + 1);
+        setActiveTab('preview');
+      } else {
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          text: `Error: ${data.error}`
+        }]);
+      }
+    } catch (e: any) {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        text: `I have updated the app with your latest requirements (Version ${generationCount + 1}). The Preview tab has been refreshed with the new features.`
+        text: `Failed to connect to the backend: ${e.message}`
       }]);
-      setIsTyping(false);
-      setGenerationCount(prev => prev + 1);
-      setActiveTab('preview');
-    }, 2000);
+    }
+
+    setIsTyping(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -84,12 +119,12 @@ export default function App() {
         </div>
         
         <div className="flex items-center gap-1 sm:gap-2">
-          <button className="hidden sm:flex items-center gap-2 p-2 px-3 hover:bg-panel-hover rounded-md text-muted hover:text-foreground transition-colors text-sm font-medium">
+          <button onClick={() => setShowShare(true)} className="hidden sm:flex items-center gap-2 p-2 px-3 hover:bg-panel-hover rounded-md text-muted hover:text-foreground transition-colors text-sm font-medium">
             <Share className="w-4 h-4" />
             Share
           </button>
           
-          <button className="hidden sm:flex items-center gap-2 p-2 px-3 hover:bg-panel-hover rounded-md text-muted hover:text-foreground transition-colors text-sm font-medium border border-border">
+          <button onClick={() => setShowExport(true)} className="hidden sm:flex items-center gap-2 p-2 px-3 hover:bg-panel-hover rounded-md text-muted hover:text-foreground transition-colors text-sm font-medium border border-border">
             <Download className="w-4 h-4" />
             Export
           </button>
@@ -101,7 +136,11 @@ export default function App() {
              Deploy
           </button>
 
-          <button className="ml-1 p-2 hover:bg-panel-hover rounded-full text-muted hover:text-foreground">
+          <button onClick={() => setShowProfile(true)} className="ml-2 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs ring-2 ring-primary/50 hover:ring-primary cursor-pointer transition-all">
+            NX
+          </button>
+
+          <button onClick={() => setShowSettings(true)} className="ml-1 p-2 hover:bg-panel-hover rounded-full text-muted hover:text-foreground">
             <MoreVertical className="w-5 h-5" />
           </button>
         </div>
@@ -193,7 +232,7 @@ export default function App() {
               </div>
             </div>
             <div className="text-center mt-3 flex items-center justify-center gap-4">
-              <button className="text-[11px] text-muted hover:text-foreground font-medium tracking-wide uppercase transition-colors flex items-center gap-1 text-center">
+              <button onClick={() => setShowSettings(true)} className="text-[11px] text-muted hover:text-foreground font-medium tracking-wide uppercase transition-colors flex items-center gap-1 text-center">
                 <Settings className="w-3" />
                 Settings
               </button>
@@ -258,7 +297,7 @@ export default function App() {
           <div className="flex-1 overflow-hidden relative">
             {activeTab === 'preview' ? (
               <div className="w-full h-full bg-[#1e1f20] flex flex-col p-4 md:p-6 pb-0">
-                <div className="flex-1 bg-black rounded-t-xl border border-border shadow-2xl flex flex-col overflow-hidden relative">
+                <div className="flex-1 bg-white rounded-t-xl border border-border shadow-2xl flex flex-col overflow-hidden relative">
                   {/* Mock Browser Chrome */}
                   <div className="h-10 bg-[#18181b] border-b border-border flex items-center px-4 gap-4 shrink-0">
                     <div className="flex gap-1.5">
@@ -272,8 +311,21 @@ export default function App() {
                   </div>
                   
                   {/* Interactive App Preview */}
-                  <div className="flex-1 overflow-hidden pointer-events-auto">
-                     <PreviewApp />
+                  <div className="flex-1 overflow-hidden pointer-events-auto bg-white flex flex-col">
+                     {!previewHtml ? (
+                       <div className="flex-1 flex items-center justify-center flex-col text-gray-400 p-8 text-center">
+                         <Sparkles className="w-12 h-12 text-primary opacity-50 mb-4" />
+                         <p className="text-xl text-gray-500 font-medium">No preview available yet.</p>
+                         <p className="max-w-xs mt-2 text-sm text-gray-400">Ask the AI to build something to see it rendered live here.</p>
+                       </div>
+                     ) : (
+                       <iframe 
+                         srcDoc={previewHtml}
+                         className="w-full h-full border-none bg-white"
+                         title="Preview"
+                         sandbox="allow-scripts allow-forms allow-same-origin allow-modals"
+                       />
+                     )}
                   </div>
                 </div>
               </div>
@@ -284,37 +336,18 @@ export default function App() {
                   <div className="w-48 shrink-0 bg-[#161616] border-r border-[#333] hidden md:flex flex-col py-2">
                     <div className="px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider">Explorer</div>
                     <div className="px-4 py-1.5 text-orange-400 bg-white/5 cursor-pointer flex items-center gap-2 border-l-2 border-orange-500">
-                      <FileCode2 className="w-4 h-4" /> App.tsx
-                    </div>
-                    <div className="px-4 py-1.5 text-gray-400 hover:text-gray-200 cursor-pointer flex items-center gap-2 border-l-2 border-transparent">
-                      <FileCode2 className="w-4 h-4" /> index.css
+                      <FileCode2 className="w-4 h-4" /> index.html
                     </div>
                   </div>
                   <div className="flex-1 flex flex-col relative">
                     <div className="h-10 bg-[#1e1e1e] border-b border-[#333] flex items-center px-2 shrink-0">
                       <div className="px-4 py-2 bg-[#1e1e1e] text-orange-400 border-t-2 border-orange-500">
-                        App.tsx
+                        index.html
                       </div>
                     </div>
                     <div className="flex-1 p-4 overflow-y-auto text-gray-300 leading-relaxed custom-scrollbar">
-                      <pre className="m-0">
-                        <code className="text-[#d4d4d4]">
-<span className="text-[#c586c0]">import</span> <span className="text-[#9cdcfe]">React</span> <span className="text-[#c586c0]">from</span> <span className="text-[#ce9178]">'react'</span>;<br/>
-<span className="text-[#c586c0]">import</span> <span className="text-[#ffd700]">{'{'}</span> <span className="text-[#9cdcfe]">Activity</span>, <span className="text-[#9cdcfe]">Users</span>, <span className="text-[#9cdcfe]">DollarSign</span> <span className="text-[#ffd700]">{ '}' }</span> <span className="text-[#c586c0]">from</span> <span className="text-[#ce9178]">'lucide-react'</span>;<br/>
-<br/>
-<span className="text-[#c586c0]">export</span> <span className="text-[#569cd6]">default</span> <span className="text-[#569cd6]">function</span> <span className="text-[#dcdcaa]">PreviewApp</span>() {'{'}<br/>
-{'  '} <span className="text-[#c586c0]">const</span> [activeNav, setActiveNav] = <span className="text-[#dcdcaa]">useState</span>(<span className="text-[#ce9178]">'Overview'</span>);<br/>
-<br/>
-{'  '} <span className="text-[#c586c0]">return</span> (<br/>
-{'    '}<span className="text-[#808080]">&lt;</span><span className="text-[#569cd6]">div</span> <span className="text-[#9cdcfe]">className</span>=<span className="text-[#ce9178]">"flex-1 w-full bg-[#0a0a0a] text-white"</span><span className="text-[#808080]">&gt;</span><br/>
-{'      '}<span className="text-[#808080]">&lt;</span><span className="text-[#569cd6]">header</span> <span className="text-[#9cdcfe]">className</span>=<span className="text-[#ce9178]">"h-14 border-b border-white/10"</span><span className="text-[#808080]">&gt;</span><br/>
-{'        '}<span className="text-[#808080]">&lt;</span><span className="text-[#569cd6]">h2</span> <span className="text-[#9cdcfe]">className</span>=<span className="text-[#ce9178]">"font-bold text-orange-500"</span><span className="text-[#808080]">&gt;</span>Nexus Dashboard<span className="text-[#808080]">&lt;/</span><span className="text-[#569cd6]">h2</span><span className="text-[#808080]">&gt;</span><br/>
-{'      '}<span className="text-[#808080]">&lt;/</span><span className="text-[#569cd6]">header</span><span className="text-[#808080]">&gt;</span><br/>
-{'      '}<span className="text-[#6a9955]">{`// Generated UI version ${generationCount}`}</span><br/>
-{'    '}<span className="text-[#808080]">&lt;/</span><span className="text-[#569cd6]">div</span><span className="text-[#808080]">&gt;</span><br/>
-{'  '});<br/>
-{'}'}
-                        </code>
+                      <pre className="m-0 break-all whitespace-pre-wrap">
+                        {previewHtml || "// No code generated yet. Type a prompt!"}
                       </pre>
                     </div>
                   </div>
@@ -322,9 +355,124 @@ export default function App() {
               </div>
             )}
           </div>
-          
         </section>
       </main>
+
+      {/* MODALS */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <div className="bg-panel border border-border shadow-2xl rounded-2xl w-full max-w-md p-6 relative">
+            <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-muted hover:text-foreground">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Settings className="w-5 h-5 text-primary"/> Settings</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-muted">Gemini API Key</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Key className="absolute left-3 top-2.5 w-4 h-4 text-muted" />
+                    <input 
+                      type="password" 
+                      value={apiKey} 
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="w-full bg-background border border-border pl-9 pr-3 py-2 rounded-lg text-sm focus-ring"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted mt-2">
+                  Get your free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-primary hover:underline">Google AI Studio</a>.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 pt-4 border-t border-border flex justify-end">
+              <button onClick={() => setShowSettings(false)} className="px-5 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary-hover shadow-sm">
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showShare && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <div className="bg-panel border border-border shadow-2xl rounded-2xl w-full max-w-md p-6 relative">
+            <button onClick={() => setShowShare(false)} className="absolute top-4 right-4 text-muted hover:text-foreground">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-2 flex items-center gap-2"><Share className="w-5 h-5 text-primary"/> Share Project</h2>
+            <p className="text-muted text-sm mb-6">Create a public link to share your generated application with others.</p>
+            
+            <div className="bg-background border border-border rounded-lg p-4 flex items-center justify-between mb-4">
+              <span className="text-sm font-mono truncate text-muted">https://aistudio.run.app/share/x1y2z3...</span>
+              <button className="text-primary hover:text-primary-hover font-medium text-sm flex items-center gap-1">
+                Copy
+              </button>
+            </div>
+
+            <button onClick={() => setShowShare(false)} className="w-full px-5 py-2.5 bg-primary text-white font-medium rounded-lg hover:bg-primary-hover shadow-sm flex items-center justify-center gap-2">
+               <Check className="w-4 h-4" /> Link Copied
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showExport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <div className="bg-panel border border-border shadow-2xl rounded-2xl w-full max-w-sm p-6 relative">
+            <button onClick={() => setShowExport(false)} className="absolute top-4 right-4 text-muted hover:text-foreground">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-2 flex items-center gap-2"><Download className="w-5 h-5 text-primary"/> Export App</h2>
+            <p className="text-muted text-sm mb-6">Download the source code or deploy to GitHub.</p>
+            
+            <div className="space-y-3">
+              <button disabled className="w-full px-4 py-3 bg-background border border-border rounded-lg text-left hover:border-primary transition-colors flex flex-col opacity-50 cursor-not-allowed">
+                <span className="font-medium text-foreground">Deploy to GitHub</span>
+                <span className="text-xs text-muted">Create a new repository with this code.</span>
+              </button>
+              <button onClick={() => setShowExport(false)} className="w-full px-4 py-3 bg-background border border-border rounded-lg text-left hover:border-primary transition-colors flex flex-col group">
+                <span className="font-medium text-foreground group-hover:text-primary">Download as ZIP</span>
+                <span className="text-xs text-muted">Download the source code locally.</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm" onClick={() => setShowProfile(false)}>
+          <div className="absolute top-16 right-4 w-64 bg-panel border border-border shadow-2xl rounded-xl p-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                NX
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-sm">Nexus User</span>
+                <span className="text-xs text-muted">nexus@commandnexus.net</span>
+              </div>
+            </div>
+            
+            <div className="space-y-1">
+              <button onClick={() => { setShowProfile(false); setShowSettings(true); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-background text-sm text-muted hover:text-foreground transition-colors">
+                API Keys &amp; Configuration
+              </button>
+              <button className="w-full text-left px-3 py-2 rounded-md hover:bg-background text-sm text-muted hover:text-foreground transition-colors">
+                Billing &amp; Usage
+              </button>
+            </div>
+            
+            <div className="mt-2 pt-2 border-t border-border">
+              <button onClick={() => setShowProfile(false)} className="w-full text-left px-3 py-2 rounded-md hover:bg-red-500/10 text-sm text-red-500 transition-colors">
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
