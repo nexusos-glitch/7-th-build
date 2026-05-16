@@ -24,6 +24,16 @@ export default function App() {
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  const models = [
+    { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", icon: "✨" },
+    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", icon: "⚡" },
+    { id: "claude-3-5-sonnet", name: "Claude 3.5 Sonnet", icon: "🧠" },
+    { id: "gpt-4o", name: "GPT-4o", icon: "🌐" },
+    { id: "llama-3", name: "Llama 3 70B", icon: "🦙" }
+  ];
+  const [selectedModel, setSelectedModel] = useState("gemini-2.5-pro");
+  const [showModelSelect, setShowModelSelect] = useState(false);
+
   // Modals
   const [showSettings, setShowSettings] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -41,7 +51,7 @@ export default function App() {
   ];
 
   const handleSuggestionClick = (suggestion: string) => {
-    setPrompt(suggestion);
+    setPrompt(prev => prev ? `${prev} ${suggestion}` : suggestion);
   };
 
   const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,7 +82,8 @@ export default function App() {
         body: JSON.stringify({
           prompt: userMsg.text,
           history,
-          apiKey
+          apiKey,
+          model: selectedModel
         })
       });
 
@@ -183,6 +194,30 @@ export default function App() {
         {/* Left Panel: Chat / Prompt Area */}
         <section className="w-full md:w-[400px] lg:w-[480px] shrink-0 flex flex-col border-r border-border bg-background z-10 relative">
           
+          {/* Agent/Model Selector */}
+          <div className="h-12 border-b border-border flex items-center px-4 shrink-0 bg-background/95 backdrop-blur z-20">
+            <div className="relative">
+              <button onClick={() => setShowModelSelect(!showModelSelect)} className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                <span>{models.find(m => m.id === selectedModel)?.icon}</span>
+                {models.find(m => m.id === selectedModel)?.name}
+                <ChevronDown className="w-4 h-4 text-muted" />
+              </button>
+              
+              {showModelSelect && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowModelSelect(false)} />
+                  <div className="absolute top-full left-0 mt-2 w-56 bg-panel border border-border rounded-xl shadow-2xl overflow-hidden z-50">
+                    {models.map(m => (
+                      <button key={m.id} onClick={() => { setSelectedModel(m.id); setShowModelSelect(false); }} className="w-full text-left px-4 py-2.5 hover:bg-background text-sm flex items-center gap-2 transition-colors">
+                        <span>{m.icon}</span> {m.name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Chat History */}
           <div className="flex-1 overflow-y-auto p-4 space-y-6 flex flex-col">
             {messages.length === 0 ? (
@@ -195,14 +230,14 @@ export default function App() {
                   Set your Gemini API key in Settings, describe the web application you want to build, and I will generate the code and live preview.
                 </p>
                 
-                <div className="w-full space-y-2 mt-auto pb-4 px-2">
-                  <p className="text-xs font-semibold text-muted uppercase tracking-wider text-left pl-2">Suggestions</p>
-                  <div className="grid grid-cols-1 gap-2">
+                <div className="w-full mt-auto pb-4 px-2">
+                  <p className="text-[11px] font-semibold text-muted uppercase tracking-wider text-left pl-2 mb-2">Suggestions</p>
+                  <div className="flex overflow-x-auto gap-2 pb-2 custom-scrollbar px-2 snap-x">
                     {suggestions.map((suggestion, i) => (
                       <button 
                         key={i} 
                         onClick={() => handleSuggestionClick(suggestion)}
-                        className="text-left p-3 rounded-xl border border-border bg-panel hover:bg-panel-hover hover:border-primary/50 transition-colors text-sm text-gray-300"
+                        className="shrink-0 snap-start text-left px-4 py-2 rounded-full border border-border bg-panel hover:bg-panel-hover hover:border-primary/50 transition-colors text-sm text-gray-300 whitespace-nowrap"
                       >
                         {suggestion}
                       </button>

@@ -14,7 +14,7 @@ async function startServer() {
 
   app.post('/api/generate', async (req, res) => {
     try {
-      const { prompt, history, apiKey } = req.body;
+      const { prompt, history, apiKey, model } = req.body;
       
       const activeKey = apiKey || process.env.GEMINI_API_KEY;
       if (!activeKey) {
@@ -38,8 +38,11 @@ Include React and ReactDOM from CDN if asked, or just use vanilla JS for simplic
       }));
       contents.push({ role: 'user', parts: [{ text: prompt }] });
 
+      // Default to gemini-2.5-pro if an unsupported model is requested in the mock
+      const aiModel = ['gemini-2.5-pro', 'gemini-2.0-flash'].includes(model) ? model : 'gemini-2.5-pro';
+
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-pro',
+        model: aiModel,
         contents,
         config: {
           systemInstruction,
