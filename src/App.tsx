@@ -38,7 +38,6 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showExport, setShowExport] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
   const [showSecrets, setShowSecrets] = useState(false);
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -178,9 +177,9 @@ export default function App() {
              Deploy
           </button>
 
-          <button onClick={() => setShowProfile(true)} className="ml-2 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs ring-2 ring-primary/50 hover:ring-primary cursor-pointer transition-all">
+          <div className="ml-2 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs ring-2 ring-primary/50 cursor-default">
             NX
-          </button>
+          </div>
 
           <button onClick={() => setShowSettings(true)} className="ml-1 p-2 hover:bg-panel-hover rounded-full text-muted hover:text-foreground">
             <MoreVertical className="w-5 h-5" />
@@ -583,37 +582,6 @@ export default function App() {
               <button onClick={() => setShowExport(false)} className="w-full px-4 py-3 bg-background border border-border rounded-lg text-left hover:border-primary transition-colors flex flex-col group">
                 <span className="font-medium text-foreground group-hover:text-primary">Download as ZIP</span>
                 <span className="text-xs text-muted">Download the source code locally.</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showProfile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm" onClick={() => setShowProfile(false)}>
-          <div className="absolute top-16 right-4 w-64 bg-panel border border-border shadow-2xl rounded-xl p-4 overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                NX
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-sm">Nexus User</span>
-                <span className="text-xs text-muted">nexus@commandnexus.net</span>
-              </div>
-            </div>
-            
-            <div className="space-y-1">
-              <button onClick={() => { setShowProfile(false); setShowSettings(true); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-background text-sm text-muted hover:text-foreground transition-colors">
-                API Keys &amp; Configuration
-              </button>
-              <button className="w-full text-left px-3 py-2 rounded-md hover:bg-background text-sm text-muted hover:text-foreground transition-colors">
-                Billing &amp; Usage
-              </button>
-            </div>
-            
-            <div className="mt-2 pt-2 border-t border-border">
-              <button onClick={() => setShowProfile(false)} className="w-full text-left px-3 py-2 rounded-md hover:bg-red-500/10 text-sm text-red-500 transition-colors">
-                Sign Out
               </button>
             </div>
           </div>
